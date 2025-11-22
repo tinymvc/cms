@@ -1,0 +1,22 @@
+{
+    "name": "tinymvc/cms",
+    "description": "Small CMS and Ultra Fast Page Builder for vanilla PHP Application",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Cms\\": "src/app"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "Shahin Moyshan",
+            "email": "shahin.moyshan2@gmail.com"
+        }
+    ],
+    "config": {
+        "optimize-autoloader": true
+    }
+}
