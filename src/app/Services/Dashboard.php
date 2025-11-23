@@ -9,9 +9,9 @@ class Dashboard
     public Collection $menu;
     public array $config;
 
-    public function __construct(array $menu = [], array $config = [])
+    public function __construct(array $config = [])
     {
         $this->config = $config;
-        $this->menu = new Collection($menu);
+        $this->menu = new Collection();
     }
 }

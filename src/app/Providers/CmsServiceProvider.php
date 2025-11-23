@@ -12,10 +12,8 @@ class CmsServiceProvider
     public function register(Container $container)
     {
         $container->singleton(Dashboard::class, function () {
-            $menu = config('cms.dashboard.menu', []);
             $config = config('cms.dashboard.config', []);
-
-            return new Dashboard($menu, $config);
+            return new Dashboard($config);
         });
     }
 
