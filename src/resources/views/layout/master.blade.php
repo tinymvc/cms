@@ -4,20 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Tiny CMS</title>
+    <title>@yield('title', 'Dashboard') - TinyCMS</title>
     @vite('app.js')
 </head>
 
-<body>
+<body class="antialiased">
 
-    @include('cms::layout.header')
-    @include('cms::layout.sidebar')
+    <div class="min-h-screen">
+        @include('cms::layout.header')
 
-    <main id="app">
-        <div>
-            @yield('content')
+        <div class="flex">
+            @include('cms::layout.sidebar')
+
+            <!-- Main Content -->
+            <main>
+                <div>
+                    @yield('content')
+                </div>
+            </main>
         </div>
-    </main>
+    </div>
 
 </body>
 

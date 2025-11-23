@@ -8,13 +8,16 @@ return new class {
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
             $table->string('title', 250);
             $table->string('slug', 250)->unique();
             $table->string('image', 255)->nullable();
             $table->string('excerpt', 255)->nullable();
             $table->text('content')->nullable();
             $table->string('type', 100)->default('post');
+            $table->string('status', 50)->default('draft');
+            $table->timestamp('published_at')->nullable();
+            $table->timestamp('scheduled_at')->nullable();
             $table->index(['title', 'type']);
             $table->timestamps();
         });

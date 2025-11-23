@@ -6,15 +6,26 @@ use Cms\Services\Dashboard;
 use Spark\Container;
 use Spark\Facades\Blade;
 use Spark\Facades\Route;
+use Spark\Http\Auth;
 
 class CmsServiceProvider
 {
     public function register(Container $container)
     {
-        $container->singleton(Dashboard::class, function () {
-            $config = config('cms.dashboard.config', []);
-            return new Dashboard($config);
-        });
+        $container->singleton(Dashboard::class);
+
+        // Customized Auth service registration with configuration
+        $container->singleton(Auth::class, fn() => new Auth(config: [
+            'session_key' => 'user_id',
+            'cache_enabled' => true,
+            'cache_name' => 'auth_cache',
+            'cache_expire' => '10 minutes',
+            'login_route' => 'cms.login',
+            'redirect_route' => 'cms.dashboard',
+            'cookie_enabled' => true,
+            'cookie_name' => 'auth',
+            'cookie_expire' => '6 months',
+        ]));
     }
 
     public function boot(Container $container)
@@ -32,8 +43,8 @@ class CmsServiceProvider
 
         // Register middlewares
         $middleware->registerMany([
-            'cms_auth' => \Cms\Http\Middlewares\CmsAuth::class,
-            'cms_guest' => \Cms\Http\Middlewares\CmsGuest::class,
+            'cms.auth' => \Cms\Http\Middlewares\CmsAuth::class,
+            'cms.guest' => \Cms\Http\Middlewares\CmsGuest::class,
         ]);
 
         // Load CMS web routes with the specified route prefix and name
@@ -47,10 +58,21 @@ class CmsServiceProvider
         // Register Blade view path for the CMS
         Blade::setUsePath("$rootPath/resources/views", 'cms');
 
+        /** @var \Cms\Services\Dashboard $dashboard */
+        $dashboard = $container->get(Dashboard::class);
+        $dashboard->init();
+
         // Register CLI command for installing the CMS
-        if (is_cli()) {
-            command('cms:install', \Cms\Commands\Install::class, 'Install the TinyMvc CMS package')
-                ->help('run this command to install the CMS package, create super user, run migrations and set up initial configuration.');
+        $this->registerCliCommands();
+    }
+
+    private function registerCliCommands(): void
+    {
+        if (!is_cli()) {
+            return; // Only register commands in CLI environment
         }
+
+        command('cms:install', \Cms\Commands\Install::class, 'Install the TinyMvc CMS package')
+            ->help('run this command to install the CMS package, create super user, run migrations and set up initial configuration.');
     }
 }
