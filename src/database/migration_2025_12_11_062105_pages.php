@@ -6,22 +6,19 @@ use Spark\Database\Schema\Schema;
 return new class {
     public function up(): void
     {
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('pages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('title', 250);
             $table->string('slug', 250)->unique();
-            $table->string('image', 255)->nullable();
-            $table->string('excerpt', 255)->nullable();
             $table->text('content')->nullable();
-            $table->string('type', 100)->default('post');
-            $table->index(['title', 'type']);
+            $table->text('metadata')->nullable();
+            $table->index('title');
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('posts');
+        Schema::dropIfExists('pages');
     }
 };
