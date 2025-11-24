@@ -30,6 +30,8 @@ class Dashboard implements DashboardContract
 
         // Fire the init action
         $this->hooks->doAction('cms_init', $this);
+
+        // dd($this);
     }
 
     /**
@@ -217,7 +219,6 @@ class Dashboard implements DashboardContract
      *
      * @param string $slug Menu slug
      * @param string $title Menu title
-     * @param string|null $capability Required capability
      * @param callable|string|null $callback Callback or URL
      * @param string|null $icon Menu icon
      * @param int $position Menu position
@@ -227,7 +228,6 @@ class Dashboard implements DashboardContract
     public function addMenu(
         string $slug,
         string $title,
-        ?string $capability = null,
         callable|string|null $callback = null,
         ?string $icon = null,
         int $position = 10,
@@ -236,7 +236,6 @@ class Dashboard implements DashboardContract
         $menuItem = [
             'slug' => $slug,
             'title' => $title,
-            'capability' => $capability ?? 'manage_options',
             'callback' => $callback,
             'icon' => $icon ?? 'dashicons-admin-generic',
             'position' => $position,

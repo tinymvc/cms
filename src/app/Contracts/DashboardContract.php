@@ -55,7 +55,6 @@ interface DashboardContract
     public function addMenu(
         string $slug,
         string $title,
-        ?string $capability = null,
         callable|string|null $callback = null,
         ?string $icon = null,
         int $position = 10,

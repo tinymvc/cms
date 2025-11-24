@@ -5,6 +5,7 @@ namespace Cms\Models;
 use App\Models\User;
 use Spark\Database\Model;
 use Spark\Database\Relation\BelongsTo;
+use Spark\Database\Relation\BelongsToMany;
 use Spark\Database\Relation\HasMany;
 
 /**
@@ -29,6 +30,32 @@ class Post extends Model
     public function meta(): HasMany
     {
         return $this->hasMany(PostMeta::class, 'post_id', 'id');
+    }
+
+    /**
+     * Get the taxonomies relationship
+     *
+     * @return \Spark\Database\Relation\BelongsToMany
+     */
+    public function taxonomies(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Taxonomy::class,
+            'posts_taxonomy',
+            'post_id',
+            'taxonomy_id'
+        );
+    }
+
+    /**
+     * Get taxonomies of a specific type
+     *
+     * @param string $type Taxonomy type (e.g., 'category', 'tag')
+     * @return array
+     */
+    public function getTaxonomiesByType(string $type): array
+    {
+        return get_post_taxonomies($this->attributes['id'], $type);
     }
 
     /**

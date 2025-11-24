@@ -1,5 +1,5 @@
 {
-    "name": "tinymvc/cms",
+    "name": "tinymvc/tinypress",
     "description": "Small CMS and Ultra Fast Page Builder for vanilla PHP Application",
     "license": "MIT",
     "autoload": {
