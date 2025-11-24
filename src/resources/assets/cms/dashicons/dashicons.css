@@ -31,9 +31,6 @@
   text-rendering: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
   vertical-align: top;
   text-align: center;
   transition: color 0.1s ease-in;

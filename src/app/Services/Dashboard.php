@@ -3,7 +3,9 @@
 namespace Cms\Services;
 
 use Cms\Contracts\DashboardContract;
+use Cms\Http\Controllers\PostController;
 use Cms\Modules\Hooks;
+use Spark\Facades\Route;
 use Spark\Support\Collection;
 
 class Dashboard implements DashboardContract
@@ -27,11 +29,13 @@ class Dashboard implements DashboardContract
     {
         // Register default post types
         $this->registerDefaultPostTypes();
+        $this->registerDefaultMenus();
 
         // Fire the init action
         $this->hooks->doAction('cms_init', $this);
 
-        // dd($this);
+        // Register menu items from post types and taxonomies
+        $this->registerMenuItems();
     }
 
     /**
@@ -188,6 +192,8 @@ class Dashboard implements DashboardContract
                 'singular_name' => ucfirst($taxonomy),
                 'search_items' => 'Search ' . ucfirst($taxonomy),
                 'all_items' => 'All ' . ucfirst($taxonomy),
+                'parent_item' => 'Parent ' . ucfirst($taxonomy),
+                'parent_item_colon' => 'Parent ' . ucfirst($taxonomy) . ':',
                 'edit_item' => 'Edit ' . ucfirst($taxonomy),
                 'update_item' => 'Update ' . ucfirst($taxonomy),
                 'add_new_item' => 'Add New ' . ucfirst($taxonomy),
@@ -200,6 +206,7 @@ class Dashboard implements DashboardContract
             'show_ui' => true,
             'show_in_menu' => true,
             'show_admin_column' => true,
+            'query_var' => true,
             'rewrite' => ['slug' => $taxonomy],
         ];
 
@@ -212,6 +219,76 @@ class Dashboard implements DashboardContract
         $this->hooks->doAction('cms_registered_taxonomy', $taxonomy, $objectType, $config);
 
         return true;
+    }
+
+    /**
+     * Find a menu item by its slug
+     *
+     * @param string $slug
+     * @return array|null
+     */
+    public function findMenuItemBySlug(string $slug): ?array
+    {
+        // Search top-level menu items
+        foreach ($this->menu as $menuItem) {
+            if ($menuItem['slug'] === $slug) {
+                return $menuItem;
+            }
+
+            // Search in children
+            foreach ($menuItem['children'] as $childItem) {
+                if ($childItem['slug'] === $slug) {
+                    return $childItem;
+                }
+            }
+        }
+
+        return null; // Not found
+    }
+
+    /**
+     * Get a registered taxonomy
+     *
+     * @param string $taxonomy
+     * @return array|null
+     */
+    public function getTaxonomy(string $taxonomy): ?array
+    {
+        return $this->registeredTaxonomies->get($taxonomy);
+    }
+
+    /**
+     * Get all registered taxonomies
+     *
+     * @return Collection
+     */
+    public function getTaxonomies(): Collection
+    {
+        return $this->registeredTaxonomies;
+    }
+
+    /**
+     * Get taxonomies for a specific post type
+     *
+     * @param string $postType
+     * @return Collection
+     */
+    public function getTaxonomiesForPostType(string $postType): Collection
+    {
+        return $this->registeredTaxonomies->filter(function ($taxonomy) use ($postType) {
+            return in_array($postType, $taxonomy['object_type'] ?? []);
+        });
+    }
+
+    /**
+     * Check if a taxonomy is registered
+     *
+     * @param string $taxonomy
+     * @return bool
+     */
+    public function taxonomyExists(string $taxonomy): bool
+    {
+        return $this->registeredTaxonomies->has($taxonomy);
     }
 
     /**
@@ -239,7 +316,6 @@ class Dashboard implements DashboardContract
             'callback' => $callback,
             'icon' => $icon ?? 'dashicons-admin-generic',
             'position' => $position,
-            'parent' => $parent,
             'children' => new Collection(),
         ];
 
@@ -247,7 +323,8 @@ class Dashboard implements DashboardContract
             // Add as submenu
             $parentMenu = $this->menu->firstWhere('slug', $parent);
             if ($parentMenu) {
-                $parentMenu['children']->put($slug, $menuItem);
+                unset($menuItem['children']); // No need for children in submenu items
+                $parentMenu['children']->put($slug, $menuItem); // Add to parent's children
             }
         } else {
             // Add as top-level menu
@@ -296,5 +373,95 @@ class Dashboard implements DashboardContract
             'menu_icon' => 'dashicons-admin-page',
             'supports' => ['title', 'editor', 'thumbnail'],
         ]);
+
+        // Register default taxonomies for posts
+        $this->registerDefaultTaxonomies();
+    }
+
+    /**
+     * Register default taxonomies (category, tag)
+     *
+     * @return void
+     */
+    protected function registerDefaultTaxonomies(): void
+    {
+        // Register 'category' taxonomy for posts
+        $this->registerTaxonomy('category', ['post'], [
+            'label' => 'Categories',
+            'labels' => [
+                'name' => 'Categories',
+                'singular_name' => 'Category',
+                'search_items' => 'Search Categories',
+                'all_items' => 'All Categories',
+                'parent_item' => 'Parent Category',
+                'parent_item_colon' => 'Parent Category:',
+                'edit_item' => 'Edit Category',
+                'update_item' => 'Update Category',
+                'add_new_item' => 'Add New Category',
+                'new_item_name' => 'New Category Name',
+                'menu_name' => 'Categories',
+            ],
+            'hierarchical' => true,
+            'show_ui' => true,
+            'show_in_menu' => true,
+            'show_admin_column' => true,
+            'query_var' => true,
+            'rewrite' => ['slug' => 'category'],
+        ]);
+
+        // Register 'tag' taxonomy for posts
+        $this->registerTaxonomy('tag', ['post'], [
+            'label' => 'Tags',
+            'labels' => [
+                'name' => 'Tags',
+                'singular_name' => 'Tag',
+                'search_items' => 'Search Tags',
+                'all_items' => 'All Tags',
+                'edit_item' => 'Edit Tag',
+                'update_item' => 'Update Tag',
+                'add_new_item' => 'Add New Tag',
+                'new_item_name' => 'New Tag Name',
+                'menu_name' => 'Tags',
+            ],
+            'hierarchical' => false,
+            'show_ui' => true,
+            'show_in_menu' => true,
+            'show_admin_column' => true,
+            'query_var' => true,
+            'rewrite' => ['slug' => 'tag'],
+        ]);
+    }
+
+    protected function registerMenuItems()
+    {
+        Route::group(function () {
+            foreach ($this->registeredPostTypes as $id => $postType) {
+                // add post type menu
+                if (isset($postType['show_ui'], $postType['show_in_menu']) && $postType['show_ui'] && $postType['show_in_menu']) {
+                    $this->addMenu(
+                        $id,
+                        $postType['labels']['name'] ?? ucfirst($id) . 's',
+                        null,
+                        $postType['menu_icon'] ?? 'dashicons-admin-post',
+                        $postType['menu_position'] ?? 10
+                    );
+                }
+
+                // add resource route for custom post types
+                if (isset($postType['show_ui']) && $postType['show_ui']) {
+                    Route::resource($id, PostController::class);
+                }
+            }
+        })
+            ->path(env('cms.route_prefix', 'admin'))
+            ->name('cms');
+    }
+
+    protected function registerDefaultMenus(): void
+    {
+        // Add Dashboard menu
+        $this->addMenu('', 'Dashboard', null, 'dashicons-dashboard', 1);
+        $this->addMenu('settings', 'Settings', null, 'dashicons-admin-generic', 50);
+        $this->addMenu('settings/general', 'General Settings', null, 'dashicons-admin-generic', 50, 'settings');
     }
 }

@@ -10,13 +10,13 @@ use Spark\Database\DB;
 use Spark\Support\Str;
 use Spark\Utils\Paginator;
 
-if (!function_exists('cms_dashboard')) {
+if (!function_exists('dashboard')) {
     /**
      * Get the CMS Dashboard instance
      *
      * @return Dashboard
      */
-    function cms_dashboard(): Dashboard
+    function dashboard(): Dashboard
     {
         return app(Dashboard::class);
     }
@@ -32,7 +32,7 @@ if (!function_exists('register_post_type')) {
      */
     function register_post_type(string $postType, array $args = []): bool
     {
-        return cms_dashboard()->registerPostType($postType, $args);
+        return dashboard()->registerPostType($postType, $args);
     }
 }
 
@@ -45,7 +45,7 @@ if (!function_exists('get_post_type')) {
      */
     function get_post_type(string $postType): ?array
     {
-        return cms_dashboard()->getPostType($postType);
+        return dashboard()->getPostType($postType);
     }
 }
 
@@ -57,7 +57,7 @@ if (!function_exists('get_post_types')) {
      */
     function get_post_types(): Collection
     {
-        return cms_dashboard()->getPostTypes();
+        return dashboard()->getPostTypes();
     }
 }
 
@@ -83,7 +83,7 @@ if (!function_exists('add_meta_box')) {
         string $priority = 'default',
         array $callbackArgs = []
     ): bool {
-        return cms_dashboard()->addMetaBox($id, $title, $callback, $postType, $context, $priority, $callbackArgs);
+        return dashboard()->addMetaBox($id, $title, $callback, $postType, $context, $priority, $callbackArgs);
     }
 }
 
@@ -97,7 +97,7 @@ if (!function_exists('get_meta_boxes')) {
      */
     function get_meta_boxes(string $postType, ?string $context = null): Collection
     {
-        return cms_dashboard()->getMetaBoxes($postType, $context);
+        return dashboard()->getMetaBoxes($postType, $context);
     }
 }
 
@@ -112,7 +112,56 @@ if (!function_exists('register_taxonomy')) {
      */
     function register_taxonomy(string $taxonomy, string|array $objectType, array $args = []): bool
     {
-        return cms_dashboard()->registerTaxonomy($taxonomy, $objectType, $args);
+        return dashboard()->registerTaxonomy($taxonomy, $objectType, $args);
+    }
+}
+
+if (!function_exists('get_taxonomy')) {
+    /**
+     * Get a registered taxonomy
+     *
+     * @param string $taxonomy Taxonomy key
+     * @return array|null Taxonomy configuration or null if not found
+     */
+    function get_taxonomy(string $taxonomy): ?array
+    {
+        return dashboard()->getTaxonomy($taxonomy);
+    }
+}
+
+if (!function_exists('get_taxonomies')) {
+    /**
+     * Get all registered taxonomies
+     *
+     * @param array $args Optional filters (output, object_type)
+     * @return Collection
+     */
+    function get_taxonomies(array $args = []): Collection
+    {
+        $taxonomies = dashboard()->getTaxonomies();
+
+        // Filter by object type (post type)
+        if (isset($args['object_type'])) {
+            $objectType = $args['object_type'];
+            $taxonomies = $taxonomies->filter(function ($taxonomy) use ($objectType) {
+                return in_array($objectType, $taxonomy['object_type'] ?? []);
+            });
+        }
+
+        return $taxonomies;
+    }
+}
+
+if (!function_exists('taxonomy_exists')) {
+    /**
+     * Check if a taxonomy is registered
+     *
+     * @param string $taxonomy Taxonomy key
+     * @return bool
+     */
+    function taxonomy_exists(string $taxonomy): bool
+    {
+        return dashboard()->taxonomyExists($taxonomy);
     }
 }
 
@@ -128,7 +177,7 @@ if (!function_exists('add_action')) {
      */
     function add_action(string $tag, callable $callback, int $priority = 10, int $acceptedArgs = 1): bool
     {
-        return cms_dashboard()->hooks->addAction($tag, $callback, $priority, $acceptedArgs);
+        return dashboard()->hooks->addAction($tag, $callback, $priority, $acceptedArgs);
     }
 }
 
@@ -142,7 +191,7 @@ if (!function_exists('do_action')) {
      */
     function do_action(string $tag, ...$args): void
     {
-        cms_dashboard()->hooks->doAction($tag, ...$args);
+        dashboard()->hooks->doAction($tag, ...$args);
     }
 }
 
@@ -157,7 +206,7 @@ if (!function_exists('remove_action')) {
      */
     function remove_action(string $tag, ?callable $callback = null, ?int $priority = null): bool
     {
-        return cms_dashboard()->hooks->removeAction($tag, $callback, $priority);
+        return dashboard()->hooks->removeAction($tag, $callback, $priority);
     }
 }
 
@@ -171,7 +220,7 @@ if (!function_exists('has_action')) {
      */
     function has_action(string $tag, ?callable $callback = null): bool
     {
-        return cms_dashboard()->hooks->hasAction($tag, $callback);
+        return dashboard()->hooks->hasAction($tag, $callback);
     }
 }
 
@@ -187,7 +236,7 @@ if (!function_exists('add_filter')) {
      */
     function add_filter(string $tag, callable $callback, int $priority = 10, int $acceptedArgs = 1): bool
     {
-        return cms_dashboard()->hooks->addFilter($tag, $callback, $priority, $acceptedArgs);
+        return dashboard()->hooks->addFilter($tag, $callback, $priority, $acceptedArgs);
     }
 }
 
@@ -202,7 +251,7 @@ if (!function_exists('apply_filters')) {
      */
     function apply_filters(string $tag, $value, ...$args): mixed
     {
-        return cms_dashboard()->hooks->applyFilters($tag, $value, ...$args);
+        return dashboard()->hooks->applyFilters($tag, $value, ...$args);
     }
 }
 
@@ -217,7 +266,7 @@ if (!function_exists('remove_filter')) {
      */
     function remove_filter(string $tag, ?callable $callback = null, ?int $priority = null): bool
     {
-        return cms_dashboard()->hooks->removeFilter($tag, $callback, $priority);
+        return dashboard()->hooks->removeFilter($tag, $callback, $priority);
     }
 }
 
@@ -231,7 +280,7 @@ if (!function_exists('has_filter')) {
      */
     function has_filter(string $tag, ?callable $callback = null): bool
     {
-        return cms_dashboard()->hooks->hasFilter($tag, $callback);
+        return dashboard()->hooks->hasFilter($tag, $callback);
     }
 }
 
@@ -255,7 +304,7 @@ if (!function_exists('add_menu')) {
         int $position = 10,
         ?string $parent = null
     ): bool {
-        return cms_dashboard()->addMenu($slug, $title, $callback, $icon, $position, $parent);
+        return dashboard()->addMenu($slug, $title, $callback, $icon, $position, $parent);
     }
 }
 
@@ -1103,3 +1152,26 @@ if (!function_exists('get_posts_by_taxonomy')) {
     }
 }
 
+if (!function_exists('admin_url')) {
+    /**
+     * Get the admin URL for the CMS dashboard
+     * 
+     * @param string $path Optional path to append
+     * @param array $params Optional query parameters
+     * @return string The absolute url
+     */
+    function admin_url(string $path = '', array $params = []): string
+    {
+        $url = route_url('cms.dashboard');
+
+        if ($path) {
+            $url .= '/' . trim($path, '/');
+        }
+
+        if (!empty($params)) {
+            $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($params);
+        }
+
+        return rtrim($url, '/');
+    }
+}

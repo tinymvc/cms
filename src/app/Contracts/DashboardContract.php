@@ -50,6 +50,26 @@ interface DashboardContract
     public function registerTaxonomy(string $taxonomy, string|array $objectType, array $args = []): bool;
 
     /**
+     * Get a registered taxonomy
+     */
+    public function getTaxonomy(string $taxonomy): ?array;
+
+    /**
+     * Get all registered taxonomies
+     */
+    public function getTaxonomies(): Collection;
+
+    /**
+     * Get taxonomies for a specific post type
+     */
+    public function getTaxonomiesForPostType(string $postType): Collection;
+
+    /**
+     * Check if a taxonomy is registered
+     */
+    public function taxonomyExists(string $taxonomy): bool;
+
+    /**
      * Add a menu item
      */
     public function addMenu(
