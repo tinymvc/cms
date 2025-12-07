@@ -36,13 +36,47 @@
             @php
                 $isActive = is_menu_active($item['slug'], $item['children']->pluck('slug')->toArray());
             @endphp
-            <a @class([
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium',
-                'transition-colors text-muted-foreground hover:bg-muted hover:text-foreground' => !$isActive,
-                'bg-primary text-primary-foreground' => $isActive,
-            ]) href="{{ admin_url($item['slug']) }}">
-                <span class="dashicons {{ $item['icon'] }} text-2xl"></span>
-                {{ $item['title'] }}</a>
+            @if ($item['children']->isNotEmpty())
+                <div x-data="{ open: {{ $isActive ? 'true' : 'false' }} }">
+                    <button @class([
+                        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium',
+                        'transition-colors text-muted-foreground hover:bg-muted hover:text-foreground' => !$isActive,
+                        'bg-primary text-primary-foreground' => $isActive,
+                    ]) @click="open = !open" type="button">
+                        <span class="dashicons {{ $item['icon'] }} text-2xl"></span>
+                        <span>{{ $item['title'] }}</span>
+                        <span :class="{ 'rotate-180': open }"
+                            class="dashicons dashicons-arrow-down-alt2 opacity-85 transform transition-transform text-sm ml-auto"></span>
+                    </button>
+                    <div x-show="open" x-transition>
+                        <div
+                            class="space-y-1.5 ml-2.5 pl-2.5 mt-1.5 mb-3 border-l border-dashed border-muted-foreground/20">
+                            @foreach ($item['children'] as $child)
+                                @php
+                                    $isChildActive = is_menu_active($child['slug']);
+                                @endphp
+                                <a @class([
+                                    'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[0.82rem] font-medium',
+                                    'transition-colors text-muted-foreground hover:bg-muted hover:text-foreground' => !$isChildActive,
+                                    'bg-primary text-primary-foreground' => $isChildActive,
+                                ]) href="{{ admin_url($child['slug']) }}">
+                                    <span class="dashicons {{ $child['icon'] }} text-xl"></span>
+                                    <span>{{ $child['title'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @else
+                <a @class([
+                    'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium',
+                    'transition-colors text-muted-foreground hover:bg-muted hover:text-foreground' => !$isActive,
+                    'bg-primary text-primary-foreground' => $isActive,
+                ]) href="{{ admin_url($item['slug']) }}">
+                    <span class="dashicons {{ $item['icon'] }} text-2xl"></span>
+                    <span>{{ $item['title'] }}</span>
+                </a>
+            @endif
         @endforeach
     </nav>
 </div>

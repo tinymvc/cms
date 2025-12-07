@@ -38,6 +38,13 @@ class CmsServiceProvider
             array_merge(['cms' => require "$rootPath/env.php"], env('cms', []))
         );
 
+        // Register Blade view path for the CMS
+        Blade::setUsePath("$rootPath/resources/views", 'cms');
+
+        /** @var \Cms\Services\Dashboard $dashboard */
+        $dashboard = $container->get(Dashboard::class);
+        $dashboard->init();
+
         /** @var \Spark\Http\Middleware $middleware */
         $middleware = $container->get(\Spark\Http\Middleware::class);
 
@@ -49,18 +56,11 @@ class CmsServiceProvider
 
         // Load CMS web routes with the specified route prefix and name
         Route::group(fn() => require "$rootPath/routes/admin.php")
-            ->path(env('cms.route_prefix', 'admin'))
+            ->path(dashboard_prefix())
             ->name('cms');
 
         // Load general CMS routes
         require "$rootPath/routes/web.php";
-
-        // Register Blade view path for the CMS
-        Blade::setUsePath("$rootPath/resources/views", 'cms');
-
-        /** @var \Cms\Services\Dashboard $dashboard */
-        $dashboard = $container->get(Dashboard::class);
-        $dashboard->init();
 
         // Register CLI command for installing the CMS
         $this->registerCliCommands();

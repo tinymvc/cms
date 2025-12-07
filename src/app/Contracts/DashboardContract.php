@@ -19,7 +19,7 @@ interface DashboardContract
     /**
      * Get a registered post type
      */
-    public function getPostType(string $postType): ?array;
+    public function getPostType(string $postType): ?CustomPostTypeContract;
 
     /**
      * Get all registered post types

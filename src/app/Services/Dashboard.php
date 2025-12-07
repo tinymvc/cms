@@ -4,25 +4,33 @@ namespace Cms\Services;
 
 use Cms\Contracts\DashboardContract;
 use Cms\Http\Controllers\PostController;
+use Cms\Http\Controllers\TaxonomyController;
 use Cms\Modules\Hooks;
+use Cms\Modules\CustomPostType;
 use Spark\Facades\Route;
 use Spark\Support\Collection;
+use function is_array;
+use function sprintf;
 
 class Dashboard implements DashboardContract
 {
+    /** @var Collection The menu items */
     public Collection $menu;
+
+    /** @var Hooks The hooks manager */
     public Hooks $hooks;
+
+    /** @var Collection<string, CustomPostType> The registered post types */
     public Collection $registeredPostTypes;
-    public Collection $registeredMetaBoxes;
-    public Collection $registeredTaxonomies;
+
+    /** @var array The current menu item */
+    public array $currentMenuItem = [];
 
     public function __construct()
     {
         $this->menu = new Collection();
         $this->hooks = new Hooks();
         $this->registeredPostTypes = new Collection();
-        $this->registeredMetaBoxes = new Collection();
-        $this->registeredTaxonomies = new Collection();
     }
 
     public function init(): void
@@ -35,55 +43,28 @@ class Dashboard implements DashboardContract
         $this->hooks->doAction('cms_init', $this);
 
         // Register menu items from post types and taxonomies
-        $this->registerMenuItems();
+        $this->registerMenuItemsForCustomPostTypes();
     }
 
     /**
      * Register a new post type
      *
-     * @param string $postType The post type slug
+     * @param string $id The post type slug
      * @param array $args Configuration arguments for the post type
      * @return bool
      */
-    public function registerPostType(string $postType, array $args = []): bool
+    public function registerPostType(string $id, array $args = []): bool
     {
-        if ($this->registeredPostTypes->has($postType)) {
+        if ($this->registeredPostTypes->has($id)) {
             return false;
         }
 
-        $defaults = [
-            'label' => ucfirst($postType),
-            'labels' => [
-                'name' => ucfirst($postType) . 's',
-                'singular_name' => ucfirst($postType),
-                'add_new' => 'Add New',
-                'add_new_item' => 'Add New ' . ucfirst($postType),
-                'edit_item' => 'Edit ' . ucfirst($postType),
-                'new_item' => 'New ' . ucfirst($postType),
-                'view_item' => 'View ' . ucfirst($postType),
-                'search_items' => 'Search ' . ucfirst($postType),
-                'not_found' => 'No ' . strtolower($postType) . ' found',
-                'not_found_in_trash' => 'No ' . strtolower($postType) . ' found in Trash',
-            ],
-            'public' => true,
-            'publicly_queryable' => true,
-            'show_ui' => true,
-            'show_in_menu' => true,
-            'menu_position' => 5,
-            'menu_icon' => 'dashicons-admin-post',
-            'capability_type' => 'post',
-            'hierarchical' => false,
-            'supports' => ['title', 'editor', 'thumbnail', 'excerpt'],
-            'has_archive' => true,
-            'rewrite' => ['slug' => $postType],
-        ];
+        $postType = new CustomPostType($id, $args);
 
-        $config = array_merge($defaults, $args);
-
-        $this->registeredPostTypes->put($postType, $config);
+        $this->registeredPostTypes->put($id, $postType);
 
         // Fire action after post type registration
-        $this->hooks->doAction('cms_registered_post_type', $postType, $config);
+        $this->hooks->doAction('cms_registered_post_type', $id, $postType);
 
         return true;
     }
@@ -91,18 +72,18 @@ class Dashboard implements DashboardContract
     /**
      * Get a registered post type
      *
-     * @param string $postType
-     * @return array|null
+     * @param string $id
+     * @return CustomPostType|null
      */
-    public function getPostType(string $postType): ?array
+    public function getPostType(string $id): ?CustomPostType
     {
-        return $this->registeredPostTypes->get($postType);
+        return $this->registeredPostTypes->get($id);
     }
 
     /**
      * Get all registered post types
      *
-     * @return Collection
+     * @return Collection<string, CustomPostType>
      */
     public function getPostTypes(): Collection
     {
@@ -131,19 +112,16 @@ class Dashboard implements DashboardContract
         array $callbackArgs = []
     ): bool {
         $postTypes = is_array($postType) ? $postType : [$postType];
-
         foreach ($postTypes as $type) {
-            $key = "{$type}_{$id}";
-
-            if ($this->registeredMetaBoxes->has($key)) {
-                continue;
+            $postType = $this->getPostType($type);
+            if (!$postType) {
+                continue; // Skip if post type not found
             }
 
-            $this->registeredMetaBoxes->put($key, [
+            $postType->registerMetaBox($id, [
                 'id' => $id,
                 'title' => $title,
                 'callback' => $callback,
-                'post_type' => $type,
                 'context' => $context,
                 'priority' => $priority,
                 'callback_args' => $callbackArgs,
@@ -158,15 +136,19 @@ class Dashboard implements DashboardContract
      *
      * @param string $postType
      * @param string|null $context
-     * @return Collection
+     * @return Collection<string, array>
      */
     public function getMetaBoxes(string $postType, ?string $context = null): Collection
     {
-        return $this->registeredMetaBoxes
-            ->filter(function ($metaBox) use ($postType, $context) {
-                $typeMatch = $metaBox['post_type'] === $postType;
+        $postType = $this->getPostType($postType);
+        if (!$postType) {
+            return new Collection(); // Return empty collection if post type not found
+        }
+
+        return $postType->getMetaBox()
+            ->filter(function ($metaBox) use ($context) {
                 $contextMatch = $context === null || $metaBox['context'] === $context;
-                return $typeMatch && $contextMatch;
+                return $contextMatch;
             })
             ->sortBy('priority');
     }
@@ -175,48 +157,22 @@ class Dashboard implements DashboardContract
      * Register a taxonomy
      *
      * @param string $taxonomy Taxonomy key
-     * @param string|array $objectType Post type(s) to associate with
+     * @param string|array $postTypes Post type(s) to associate with
      * @param array $args Configuration arguments
      * @return bool
      */
-    public function registerTaxonomy(string $taxonomy, string|array $objectType, array $args = []): bool
+    public function registerTaxonomy(string $taxonomy, string|array $postTypes, array $args = []): bool
     {
-        if ($this->registeredTaxonomies->has($taxonomy)) {
-            return false;
+        $postTypes = is_array($postTypes) ? $postTypes : [$postTypes];
+
+        foreach ($postTypes as $type) {
+            $postType = $this->getPostType($type);
+            if (!$postType) {
+                continue; // Skip if post type not found
+            }
+
+            $postType->registerTaxonomy($taxonomy, $args);
         }
-
-        $defaults = [
-            'label' => ucfirst($taxonomy),
-            'labels' => [
-                'name' => ucfirst($taxonomy),
-                'singular_name' => ucfirst($taxonomy),
-                'search_items' => 'Search ' . ucfirst($taxonomy),
-                'all_items' => 'All ' . ucfirst($taxonomy),
-                'parent_item' => 'Parent ' . ucfirst($taxonomy),
-                'parent_item_colon' => 'Parent ' . ucfirst($taxonomy) . ':',
-                'edit_item' => 'Edit ' . ucfirst($taxonomy),
-                'update_item' => 'Update ' . ucfirst($taxonomy),
-                'add_new_item' => 'Add New ' . ucfirst($taxonomy),
-                'new_item_name' => 'New ' . ucfirst($taxonomy) . ' Name',
-                'menu_name' => ucfirst($taxonomy),
-            ],
-            'public' => true,
-            'publicly_queryable' => true,
-            'hierarchical' => false,
-            'show_ui' => true,
-            'show_in_menu' => true,
-            'show_admin_column' => true,
-            'query_var' => true,
-            'rewrite' => ['slug' => $taxonomy],
-        ];
-
-        $config = array_merge($defaults, $args);
-        $config['object_type'] = is_array($objectType) ? $objectType : [$objectType];
-
-        $this->registeredTaxonomies->put($taxonomy, $config);
-
-        // Fire action after taxonomy registration
-        $this->hooks->doAction('cms_registered_taxonomy', $taxonomy, $objectType, $config);
 
         return true;
     }
@@ -229,6 +185,8 @@ class Dashboard implements DashboardContract
      */
     public function findMenuItemBySlug(string $slug): ?array
     {
+        $slug = str($slug)->trim('/')->lower()->toString();
+
         // Search top-level menu items
         foreach ($this->menu as $menuItem) {
             if ($menuItem['slug'] === $slug) {
@@ -254,7 +212,16 @@ class Dashboard implements DashboardContract
      */
     public function getTaxonomy(string $taxonomy): ?array
     {
-        return $this->registeredTaxonomies->get($taxonomy);
+        $taxonomy = null;
+        foreach ($this->registeredPostTypes as $postType) {
+            $taxonomies = $postType->getTaxonomies();
+            if ($taxonomies->has($taxonomy)) {
+                $taxonomy = $taxonomies->get($taxonomy);
+                break;
+            }
+        }
+
+        return $taxonomy;
     }
 
     /**
@@ -264,7 +231,11 @@ class Dashboard implements DashboardContract
      */
     public function getTaxonomies(): Collection
     {
-        return $this->registeredTaxonomies;
+        $taxonomies = new Collection();
+        foreach ($this->registeredPostTypes as $postType) {
+            $taxonomies = $taxonomies->merge($postType->getTaxonomies());
+        }
+        return $taxonomies;
     }
 
     /**
@@ -275,9 +246,12 @@ class Dashboard implements DashboardContract
      */
     public function getTaxonomiesForPostType(string $postType): Collection
     {
-        return $this->registeredTaxonomies->filter(function ($taxonomy) use ($postType) {
-            return in_array($postType, $taxonomy['object_type'] ?? []);
-        });
+        $postType = $this->getPostType($postType);
+        if (!$postType) {
+            return new Collection(); // Return empty collection if post type not found
+        }
+
+        return $postType->getTaxonomies();
     }
 
     /**
@@ -288,7 +262,7 @@ class Dashboard implements DashboardContract
      */
     public function taxonomyExists(string $taxonomy): bool
     {
-        return $this->registeredTaxonomies->has($taxonomy);
+        return $this->getTaxonomy($taxonomy) !== null;
     }
 
     /**
@@ -296,7 +270,7 @@ class Dashboard implements DashboardContract
      *
      * @param string $slug Menu slug
      * @param string $title Menu title
-     * @param callable|string|null $callback Callback or URL
+     * @param callable|array|string|null $callback Callback or URL
      * @param string|null $icon Menu icon
      * @param int $position Menu position
      * @param string|null $parent Parent menu slug for submenu
@@ -305,11 +279,13 @@ class Dashboard implements DashboardContract
     public function addMenu(
         string $slug,
         string $title,
-        callable|string|null $callback = null,
+        callable|array|string|null $callback = null,
         ?string $icon = null,
         int $position = 10,
         ?string $parent = null
     ): bool {
+        $slug = str($slug)->trim('/')->lower()->toString();
+
         $menuItem = [
             'slug' => $slug,
             'title' => $title,
@@ -321,9 +297,11 @@ class Dashboard implements DashboardContract
 
         if ($parent) {
             // Add as submenu
+            $parent = str($parent)->trim('/')->lower()->toString();
             $parentMenu = $this->menu->firstWhere('slug', $parent);
             if ($parentMenu) {
                 unset($menuItem['children']); // No need for children in submenu items
+                $menuItem['parent'] = $parent; // Set parent slug
                 $parentMenu['children']->put($slug, $menuItem); // Add to parent's children
             }
         } else {
@@ -345,6 +323,35 @@ class Dashboard implements DashboardContract
     }
 
     /**
+     * Set the current menu item
+     *
+     * @param array $menuItem
+     * @return void
+     */
+    public function setCurrentMenuItem(array $menuItem): void
+    {
+        if (isset($menuItem['parent'])) {
+            $menu = $this->findMenuItemBySlug($menuItem['parent']);
+            $menu['child'] = $menuItem;
+            unset($menu['children']);
+            $this->currentMenuItem = $menu;
+            return;
+        }
+
+        $this->currentMenuItem = $menuItem;
+    }
+
+    /**
+     * Get the current menu item
+     *
+     * @return array
+     */
+    public function getCurrentMenuItem(): array
+    {
+        return $this->currentMenuItem ?? [];
+    }
+
+    /**
      * Register default post types (post, page)
      *
      * @return void
@@ -362,29 +369,6 @@ class Dashboard implements DashboardContract
             'supports' => ['title', 'editor', 'thumbnail', 'excerpt', 'comments'],
         ]);
 
-        // Register 'page' post type
-        $this->registerPostType('page', [
-            'label' => 'Page',
-            'labels' => [
-                'name' => 'Pages',
-                'singular_name' => 'Page',
-            ],
-            'hierarchical' => true,
-            'menu_icon' => 'dashicons-admin-page',
-            'supports' => ['title', 'editor', 'thumbnail'],
-        ]);
-
-        // Register default taxonomies for posts
-        $this->registerDefaultTaxonomies();
-    }
-
-    /**
-     * Register default taxonomies (category, tag)
-     *
-     * @return void
-     */
-    protected function registerDefaultTaxonomies(): void
-    {
         // Register 'category' taxonomy for posts
         $this->registerTaxonomy('category', ['post'], [
             'label' => 'Categories',
@@ -432,36 +416,68 @@ class Dashboard implements DashboardContract
         ]);
     }
 
-    protected function registerMenuItems()
+    protected function registerMenuItemsForCustomPostTypes()
     {
         Route::group(function () {
-            foreach ($this->registeredPostTypes as $id => $postType) {
-                // add post type menu
-                if (isset($postType['show_ui'], $postType['show_in_menu']) && $postType['show_ui'] && $postType['show_in_menu']) {
-                    $this->addMenu(
-                        $id,
-                        $postType['labels']['name'] ?? ucfirst($id) . 's',
-                        null,
-                        $postType['menu_icon'] ?? 'dashicons-admin-post',
-                        $postType['menu_position'] ?? 10
-                    );
-                }
+            // add menu items for registered post types
+            foreach ($this->getPostTypes() as $id => $postType) {
+                if ($postType->isShowUi()) {
+                    // Add menu items for post type if set to show in menu
+                    if ($postType->isShowInMenu()) {
+                        $this->addMenu(
+                            $id,
+                            $postType['labels']['name'] ?? str($id)->ucfirst()->plural(),
+                            null,
+                            $postType['menu_icon'] ?? 'dashicons-admin-post',
+                            $postType['menu_position'] ?? 10
+                        );
+                        $this->addMenu(
+                            $id,
+                            sprintf('All %s', $postType['labels']['name'] ?? str($id)->ucfirst()->plural()),
+                            null,
+                            'dashicons-editor-table',
+                            parent: $id
+                        );
+                        $this->addMenu(
+                            "$id/create",
+                            sprintf('Create %s', $postType['labels']['singular_name'] ?? str($id)->ucfirst()->singular()),
+                            null,
+                            'dashicons-plus',
+                            parent: $id
+                        );
+                    }
 
-                // add resource route for custom post types
-                if (isset($postType['show_ui']) && $postType['show_ui']) {
+                    foreach ($postType->getTaxonomies() as $taxonomyId => $taxonomy) {
+                        // Add menu item for taxonomy if set to show in menu
+                        if ($postType->isShowInMenu()) {
+                            $this->addMenu(
+                                "{$id}/{$taxonomyId}",
+                                $taxonomy['labels']['name'] ?? ucfirst($id),
+                                null,
+                                'dashicons-tag',
+                                20,
+                                $id
+                            );
+                        }
+
+                        // Register routes for taxonomy terms
+                        $slug = $taxonomy['rewrite']['slug'] ?? $taxonomyId;
+                        Route::resource("{$id}/{$slug}", TaxonomyController::class);
+                    }
+
+                    // Register routes for the post type
                     Route::resource($id, PostController::class);
                 }
             }
         })
-            ->path(env('cms.route_prefix', 'admin'))
+            ->path(dashboard_prefix())
             ->name('cms');
     }
 
     protected function registerDefaultMenus(): void
     {
-        // Add Dashboard menu
-        $this->addMenu('', 'Dashboard', null, 'dashicons-dashboard', 1);
-        $this->addMenu('settings', 'Settings', null, 'dashicons-admin-generic', 50);
-        $this->addMenu('settings/general', 'General Settings', null, 'dashicons-admin-generic', 50, 'settings');
+        $this->addMenu('/', 'Dashboard', null, 'dashicons-dashboard', 1);
+        $this->addMenu('/settings', 'Settings', null, 'dashicons-admin-generic', 50);
+        $this->addMenu('/settings/general', 'General Settings', null, 'dashicons-admin-tools', 50, '/settings');
     }
 }

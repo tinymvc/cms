@@ -69,4 +69,12 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  button {
+    @apply cursor-pointer;
+
+    &:disabled {
+      @apply pointer-events-none opacity-65;
+    }
+  }
 }

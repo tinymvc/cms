@@ -19,6 +19,8 @@ class DashboardController extends Controller
         $menuItem = $dashboard->findMenuItemBySlug($slug);
 
         if ($menuItem) {
+            $dashboard->setCurrentMenuItem($menuItem);
+
             return view('cms::menu.page', compact('menuItem'));
         }
 
