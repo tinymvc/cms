@@ -157,6 +157,17 @@ class Post extends Model
     }
 
     /**
+     * Restore post from trash
+     *
+     * @return bool|int
+     */
+    public function restore(): bool|int
+    {
+        $this->attributes['status'] = 'draft';
+        return $this->save();
+    }
+
+    /**
      * Get the author relationship
      *
      * @return \Spark\Database\Relation\BelongsTo|null

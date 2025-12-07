@@ -3,6 +3,8 @@
 namespace Cms\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Cms\Models\Post;
+use Cms\Modules\Bread\Table;
 use Cms\Modules\CustomPostType;
 use Cms\Services\Dashboard;
 use Spark\Http\Request;
@@ -33,6 +35,7 @@ class PostController extends Controller
 
     public function index()
     {
-        return view('cms::posts.index');
+        return Table::make(new Post)
+            ->render();
     }
 }

@@ -13,13 +13,13 @@ class CustomPostType implements CustomPostTypeContract, Arrayable, ArrayAccess
     protected string $label;
     protected array $labels;
     protected bool $public;
-    protected bool $publicly_queryable;
-    protected bool $show_ui;
-    protected bool $show_in_menu;
-    protected int $menu_position;
-    protected string $menu_icon;
+    protected bool $publiclyQueryable;
+    protected bool $showUi;
+    protected bool $showInMenu;
+    protected int $menuPosition;
+    protected string $menuIcon;
     protected array $supports;
-    protected bool $has_archive;
+    protected bool $hasArchive;
     protected array $rewrite;
     protected Collection $taxonomies;
     protected Collection $metaBoxes;
@@ -59,13 +59,13 @@ class CustomPostType implements CustomPostTypeContract, Arrayable, ArrayAccess
         $this->label = $config['label'];
         $this->labels = $config['labels'];
         $this->public = $config['public'];
-        $this->publicly_queryable = $config['publicly_queryable'];
-        $this->show_ui = $config['show_ui'];
-        $this->show_in_menu = $config['show_in_menu'];
-        $this->menu_position = $config['menu_position'];
-        $this->menu_icon = $config['menu_icon'];
+        $this->publiclyQueryable = $config['publicly_queryable'];
+        $this->showUi = $config['show_ui'];
+        $this->showInMenu = $config['show_in_menu'];
+        $this->menuPosition = $config['menu_position'];
+        $this->menuIcon = $config['menu_icon'];
         $this->supports = $config['supports'];
-        $this->has_archive = $config['has_archive'];
+        $this->hasArchive = $config['has_archive'];
         $this->rewrite = $config['rewrite'];
 
         $this->taxonomies = new Collection();
@@ -94,27 +94,27 @@ class CustomPostType implements CustomPostTypeContract, Arrayable, ArrayAccess
 
     public function isPubliclyQueryable(): bool
     {
-        return $this->publicly_queryable;
+        return $this->publiclyQueryable;
     }
 
     public function isShowUi(): bool
     {
-        return $this->show_ui;
+        return $this->showUi;
     }
 
     public function isShowInMenu(): bool
     {
-        return $this->show_in_menu;
+        return $this->showInMenu;
     }
 
     public function getMenuPosition(): int
     {
-        return $this->menu_position;
+        return $this->menuPosition;
     }
 
     public function getMenuIcon(): string
     {
-        return $this->menu_icon;
+        return $this->menuIcon;
     }
 
     public function getSupports(): array
@@ -124,7 +124,7 @@ class CustomPostType implements CustomPostTypeContract, Arrayable, ArrayAccess
 
     public function hasArchive(): bool
     {
-        return $this->has_archive;
+        return $this->hasArchive;
     }
 
     public function getRewrite(): array
@@ -195,13 +195,13 @@ class CustomPostType implements CustomPostTypeContract, Arrayable, ArrayAccess
             'label' => $this->label,
             'labels' => $this->labels,
             'public' => $this->public,
-            'publicly_queryable' => $this->publicly_queryable,
-            'show_ui' => $this->show_ui,
-            'show_in_menu' => $this->show_in_menu,
-            'menu_position' => $this->menu_position,
-            'menu_icon' => $this->menu_icon,
+            'publicly_queryable' => $this->publiclyQueryable,
+            'show_ui' => $this->showUi,
+            'show_in_menu' => $this->showInMenu,
+            'menu_position' => $this->menuPosition,
+            'menu_icon' => $this->menuIcon,
             'supports' => $this->supports,
-            'has_archive' => $this->has_archive,
+            'has_archive' => $this->hasArchive,
             'rewrite' => $this->rewrite,
         ];
     }

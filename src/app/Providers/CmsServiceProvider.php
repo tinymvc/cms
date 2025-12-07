@@ -33,11 +33,6 @@ class CmsServiceProvider
         // Determine the root path of the CMS package
         $rootPath = dirname(__DIR__, 2);
 
-        // Set default configuration for the CMS
-        envs(
-            array_merge(['cms' => require "$rootPath/env.php"], env('cms', []))
-        );
-
         // Register Blade view path for the CMS
         Blade::setUsePath("$rootPath/resources/views", 'cms');
 
