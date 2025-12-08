@@ -26,4 +26,24 @@ class DashboardController extends Controller
 
         abort(404);
     }
+
+    public function settings($setting, Dashboard $dashboard)
+    {
+        if ($dashboard->getSettings()->has($setting)) {
+            $menuItem = $dashboard->findMenuItemBySlug("/settings/$setting");
+            if ($menuItem) {
+                $dashboard->setCurrentMenuItem($menuItem);
+            }
+
+            return view('cms::settings.page', [
+                'setting' => $dashboard->getSetting($setting),
+            ]);
+        }
+
+        if (empty($setting)) {
+            return redirect('cms.dashboard');
+        }
+
+        abort(404);
+    }
 }

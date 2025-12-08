@@ -165,6 +165,20 @@ if (!function_exists('taxonomy_exists')) {
     }
 }
 
+if (!function_exists('register_setting')) {
+    /**
+     * Register a setting in the CMS dashboard
+     *
+     * @param string $key Setting key
+     * @param array $args Array of arguments for registering the setting
+     * @return bool
+     */
+    function register_setting(string $key, array $args = []): bool
+    {
+        return dashboard()->registerSetting($key, $args);
+    }
+}
+
 if (!function_exists('add_action')) {
     /**
      * Add an action hook (WordPress-like API)

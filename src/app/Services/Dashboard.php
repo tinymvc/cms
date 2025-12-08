@@ -23,6 +23,9 @@ class Dashboard implements DashboardContract
     /** @var Collection<string, CustomPostType> The registered post types */
     public Collection $registeredPostTypes;
 
+    /** @var Collection The site settings */
+    public Collection $settings;
+
     /** @var array The current menu item */
     public array $currentMenuItem = [];
 
@@ -31,16 +34,16 @@ class Dashboard implements DashboardContract
         $this->menu = new Collection();
         $this->hooks = new Hooks();
         $this->registeredPostTypes = new Collection();
+        $this->settings = new Collection();
     }
 
     public function init(): void
     {
-        // Register default post types
-        $this->registerDefaultPostTypes();
-        $this->registerDefaultMenus();
-
         // Fire the init action
         $this->hooks->doAction('cms_init', $this);
+
+        // Register default menu items
+        $this->registerMenusItems();
 
         // Register menu items from post types and taxonomies
         $this->registerMenuItemsForCustomPostTypes();
@@ -95,20 +98,18 @@ class Dashboard implements DashboardContract
      *
      * @param string $id Unique identifier for the meta box
      * @param string $title Display title of the meta box
-     * @param callable $callback Callback function to render the meta box content
+     * @param string|array|callable $callback Callback function to render the meta box content
      * @param string|array $postType Post type(s) this meta box applies to
-     * @param string $context Where the meta box should display (normal, side, advanced)
-     * @param string $priority Priority of the meta box (high, core, default, low)
+     * @param int $priority Priority of the meta box (high, core, default, low)
      * @param array $callbackArgs Additional arguments passed to callback
      * @return bool
      */
     public function addMetaBox(
         string $id,
         string $title,
-        callable $callback,
+        string|array|callable $callback,
         string|array $postType = 'post',
-        string $context = 'normal',
-        string $priority = 'default',
+        int $priority = 0,
         array $callbackArgs = []
     ): bool {
         $postTypes = is_array($postType) ? $postType : [$postType];
@@ -122,7 +123,6 @@ class Dashboard implements DashboardContract
                 'id' => $id,
                 'title' => $title,
                 'callback' => $callback,
-                'context' => $context,
                 'priority' => $priority,
                 'callback_args' => $callbackArgs,
             ]);
@@ -270,7 +270,7 @@ class Dashboard implements DashboardContract
      *
      * @param string $slug Menu slug
      * @param string $title Menu title
-     * @param callable|array|string|null $callback Callback or URL
+     * @param string|callable|array|null $callback Callback or URL
      * @param string|null $icon Menu icon
      * @param int $position Menu position
      * @param string|null $parent Parent menu slug for submenu
@@ -279,10 +279,10 @@ class Dashboard implements DashboardContract
     public function addMenu(
         string $slug,
         string $title,
-        callable|array|string|null $callback = null,
-        ?string $icon = null,
+        string|callable|array|null $callback = null,
+        string|null $icon = null,
         int $position = 10,
-        ?string $parent = null
+        string|null $parent = null
     ): bool {
         $slug = str($slug)->trim('/')->lower()->toString();
 
@@ -352,68 +352,50 @@ class Dashboard implements DashboardContract
     }
 
     /**
-     * Register default post types (post, page)
+     * Register a setting
      *
-     * @return void
+     * @param string $id Setting identifier
+     * @param array $args Configuration arguments
+     * @return bool
      */
-    protected function registerDefaultPostTypes(): void
+    public function registerSetting(string $id, array $args = []): bool
     {
-        // Register 'post' post type
-        $this->registerPostType('post', [
-            'label' => 'Post',
-            'labels' => [
-                'name' => 'Posts',
-                'singular_name' => 'Post',
-            ],
-            'menu_icon' => 'dashicons-admin-post',
-            'supports' => ['title', 'editor', 'thumbnail', 'excerpt', 'comments'],
-        ]);
+        if ($this->settings->has($id)) {
+            return false;
+        }
 
-        // Register 'category' taxonomy for posts
-        $this->registerTaxonomy('category', ['post'], [
-            'label' => 'Categories',
-            'labels' => [
-                'name' => 'Categories',
-                'singular_name' => 'Category',
-                'search_items' => 'Search Categories',
-                'all_items' => 'All Categories',
-                'parent_item' => 'Parent Category',
-                'parent_item_colon' => 'Parent Category:',
-                'edit_item' => 'Edit Category',
-                'update_item' => 'Update Category',
-                'add_new_item' => 'Add New Category',
-                'new_item_name' => 'New Category Name',
-                'menu_name' => 'Categories',
-            ],
-            'hierarchical' => true,
-            'show_ui' => true,
-            'show_in_menu' => true,
-            'show_admin_column' => true,
-            'query_var' => true,
-            'rewrite' => ['slug' => 'category'],
-        ]);
+        $setting = [
+            'label' => str($id)->title()->toString(),
+            'icon' => 'dashicons-admin-tools',
+            'view' => null,
+            'callback' => null,
+            ...$args
+        ];
 
-        // Register 'tag' taxonomy for posts
-        $this->registerTaxonomy('tag', ['post'], [
-            'label' => 'Tags',
-            'labels' => [
-                'name' => 'Tags',
-                'singular_name' => 'Tag',
-                'search_items' => 'Search Tags',
-                'all_items' => 'All Tags',
-                'edit_item' => 'Edit Tag',
-                'update_item' => 'Update Tag',
-                'add_new_item' => 'Add New Tag',
-                'new_item_name' => 'New Tag Name',
-                'menu_name' => 'Tags',
-            ],
-            'hierarchical' => false,
-            'show_ui' => true,
-            'show_in_menu' => true,
-            'show_admin_column' => true,
-            'query_var' => true,
-            'rewrite' => ['slug' => 'tag'],
-        ]);
+        $this->settings->put($id, $setting);
+
+        return true;
+    }
+
+    /**
+     * Get a registered setting
+     *
+     * @param string $id
+     * @return array|null
+     */
+    public function getSetting(string $id): ?array
+    {
+        return $this->settings->get($id);
+    }
+
+    /**
+     * Get all registered settings
+     *
+     * @return Collection
+     */
+    public function getSettings(): Collection
+    {
+        return $this->settings;
     }
 
     protected function registerMenuItemsForCustomPostTypes()
@@ -474,10 +456,22 @@ class Dashboard implements DashboardContract
             ->name('cms');
     }
 
-    protected function registerDefaultMenus(): void
+    protected function registerMenusItems(): void
     {
         $this->addMenu('/', 'Dashboard', null, 'dashicons-dashboard', 1);
-        $this->addMenu('/settings', 'Settings', null, 'dashicons-admin-generic', 50);
-        $this->addMenu('/settings/general', 'General Settings', null, 'dashicons-admin-tools', 50, '/settings');
+
+        if ($this->settings->isNotEmpty()) {
+            $this->addMenu('/settings', 'Settings', null, 'dashicons-admin-generic', 50);
+
+            foreach ($this->settings as $key => $setting) {
+                $this->addMenu(
+                    "/settings/{$key}",
+                    $setting['label'] ?? str($key)->title()->toString(),
+                    null,
+                    $setting['icon'] ?? 'dashicons-admin-tools',
+                    parent: '/settings'
+                );
+            }
+        }
     }
 }

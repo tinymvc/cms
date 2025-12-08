@@ -32,10 +32,9 @@ interface DashboardContract
     public function addMetaBox(
         string $id,
         string $title,
-        callable $callback,
+        string|array|callable $callback,
         string|array $postType = 'post',
-        string $context = 'normal',
-        string $priority = 'default',
+        int $priority = 0,
         array $callbackArgs = []
     ): bool;
 
@@ -75,10 +74,10 @@ interface DashboardContract
     public function addMenu(
         string $slug,
         string $title,
-        callable|string|null $callback = null,
-        ?string $icon = null,
+        string|array|callable|null $callback = null,
+        string|null $icon = null,
         int $position = 10,
-        ?string $parent = null
+        string|null $parent = null
     ): bool;
 
     /**

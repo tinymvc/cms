@@ -3,7 +3,6 @@
 namespace Cms\Modules\Bread;
 
 use Spark\Database\Model;
-use Spark\Http\Response;
 
 class Table
 {
@@ -21,7 +20,7 @@ class Table
         return new static($model);
     }
 
-    public function render(): Response
+    public function render()
     {
         return view('cms::bread.table');
     }

@@ -4,6 +4,7 @@ namespace Cms\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Cms\Models\Post;
+use Cms\Modules\Bread\Form;
 use Cms\Modules\Bread\Table;
 use Cms\Modules\CustomPostType;
 use Cms\Services\Dashboard;
@@ -36,6 +37,12 @@ class PostController extends Controller
     public function index()
     {
         return Table::make(new Post)
+            ->render();
+    }
+
+    public function create()
+    {
+        return Form::make(new Post)
             ->render();
     }
 }
