@@ -16,13 +16,13 @@
         {{-- Page Header --}}
         <div class="mb-6">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ $model->primaryValue() ? 'Edit' : 'Create' }} {{ class_basename($model) }}
+                {{ $model->exists() ? 'Edit' : 'Create' }} {{ class_basename($model) }}
             </h1>
         </div>
 
         {{-- Display all errors at top --}}
         @if (!empty($errors))
-            <x-cms::errors :errors="$errors" />
+            <x-cms::errors :$errors />
         @endif
 
         {{-- Form --}}
@@ -97,7 +97,7 @@
                 </a>
 
                 <div class="flex items-center gap-3">
-                    @if (!$model->primaryValue())
+                    @if (!$model->exists())
                         <button type="submit" name="status" value="draft"
                             class="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">
                             Save as Draft

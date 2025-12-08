@@ -365,7 +365,7 @@ class Dashboard implements DashboardContract
         }
 
         $setting = [
-            'label' => str($id)->title()->toString(),
+            'label' => str($id)->headline()->toString(),
             'icon' => 'dashicons-admin-tools',
             'view' => null,
             'callback' => null,
@@ -466,7 +466,7 @@ class Dashboard implements DashboardContract
             foreach ($this->settings as $key => $setting) {
                 $this->addMenu(
                     "/settings/{$key}",
-                    $setting['label'] ?? str($key)->title()->toString(),
+                    $setting['label'] ?? str($key)->headline()->toString(),
                     null,
                     $setting['icon'] ?? 'dashicons-admin-tools',
                     parent: '/settings'

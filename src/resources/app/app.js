@@ -37,8 +37,8 @@ document.addEventListener("alpine:init", () => {
     },
   }));
 
-  Alpine.data("fileUpload", (name) => ({
-    preview: null,
+  Alpine.data("fileUpload", (name, value) => ({
+    preview: value || null,
     handleFileSelect(event) {
       const file = event.target.files[0];
       if (file && file.type.startsWith("image/")) {
@@ -47,6 +47,63 @@ document.addEventListener("alpine:init", () => {
           this.preview = e.target.result;
         };
         reader.readAsDataURL(file);
+      }
+    },
+  }));
+
+  Alpine.data("tableData", (rows, baseUrl) => ({
+    selectedRows: [],
+
+    toggleRow(id) {
+      const index = this.selectedRows.indexOf(id);
+      if (index > -1) {
+        this.selectedRows.splice(index, 1);
+      } else {
+        this.selectedRows.push(id);
+      }
+    },
+
+    toggleAll(event) {
+      if (event.target.checked) {
+        // Select all visible rows
+        this.selectedRows = rows;
+      } else {
+        this.selectedRows = [];
+      }
+    },
+
+    performBulkAction(action) {
+      if (this.selectedRows.length === 0) {
+        alert("Please select at least one item");
+        return;
+      }
+
+      if (
+        confirm(
+          `Are you sure you want to ${action} ${this.selectedRows.length} item(s)?`
+        )
+      ) {
+        // Submit bulk action
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = `${baseUrl}/bulk/${action}`;
+
+        const csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "_token";
+        csrfInput.value = document.head.querySelector(
+          'meta[name="csrf-token"]'
+        ).content;
+        form.appendChild(csrfInput);
+
+        const idsInput = document.createElement("input");
+        idsInput.type = "hidden";
+        idsInput.name = "ids";
+        idsInput.value = JSON.stringify(this.selectedRows);
+        form.appendChild(idsInput);
+
+        document.body.appendChild(form);
+        form.submit();
       }
     },
   }));

@@ -12,16 +12,16 @@ use Closure;
 class Column
 {
     protected string $name;
-    protected ?string $label = null;
+    protected string|null $label = null;
     protected bool $sortable = false;
     protected bool $searchable = false;
-    protected ?Closure $formatter = null;
-    protected ?string $align = null; // left, center, right
+    protected Closure|null $formatter = null;
+    protected string|null $align = null; // left, center, right
     protected bool $hidden = false;
-    protected ?Closure $condition = null;
+    protected Closure|null $condition = null;
     protected string $type = 'text'; // text, badge, image, date, boolean, custom
     protected array $badgeColors = []; // For badge type: ['value' => 'color-class']
-    protected ?string $width = null;
+    protected string|null $width = null;
 
     public function __construct(string $name)
     {
@@ -174,11 +174,7 @@ class Column
         }
 
         // Auto-generate label from column name
-        return str($this->name)
-            ->replace('_', ' ')
-            ->replace('-', ' ')
-            ->title()
-            ->toString();
+        return str($this->name)->headline()->toString();
     }
 
     /**

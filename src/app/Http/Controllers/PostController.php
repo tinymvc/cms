@@ -92,8 +92,8 @@ class PostController extends Controller
         }
 
         // Success - redirect to index
-        session()->flash('success', 'Post created successfully!');
-        return redirect(admin_url($this->postType->getId()));
+        return redirect(admin_url($this->postType->getId()))
+            ->with('success', 'Post created successfully!');
     }
 
     /**
@@ -101,7 +101,7 @@ class PostController extends Controller
      */
     public function edit(int $id)
     {
-        $post = Post::query()->findOrFail($id);
+        $post = Post::findOrFail($id);
         $form = $this->buildForm($post);
 
         $form->action(admin_url($this->postType->getId() . '/' . $id))
@@ -127,7 +127,7 @@ class PostController extends Controller
      */
     public function update(Request $request, int $id)
     {
-        $post = Post::query()->findOrFail($id);
+        $post = Post::findOrFail($id);
         $form = $this->buildForm($post);
 
         // Validate and save
@@ -139,8 +139,8 @@ class PostController extends Controller
         }
 
         // Success - redirect to index
-        session()->flash('success', 'Post updated successfully!');
-        return redirect(admin_url($this->postType->getId()));
+        return redirect(admin_url($this->postType->getId()))
+            ->with('success', 'Post updated successfully!');
     }
 
     /**
@@ -148,11 +148,11 @@ class PostController extends Controller
      */
     public function destroy(int $id)
     {
-        $post = Post::query()->findOrFail($id);
+        $post = Post::findOrFail($id);
         $post->remove();
 
-        session()->flash('success', 'Post deleted successfully!');
-        return redirect(admin_url($this->postType->getId()));
+        return redirect(admin_url($this->postType->getId()))
+            ->with('success', 'Post deleted successfully!');
     }
 
     /**
@@ -161,6 +161,19 @@ class PostController extends Controller
     private function buildForm(Post $post): Form
     {
         $form = Form::make($post);
+
+        $form->fillable([
+            'author_id',
+            'title',
+            'slug',
+            'image',
+            'excerpt',
+            'content',
+            'type',
+            'status',
+            'published_at',
+            'scheduled_at',
+        ]);
 
         // Add tabs
         $form->tab('general', 'General');
@@ -251,7 +264,7 @@ class PostController extends Controller
             }
 
             // Set author_id for new posts
-            if (!$model->primaryValue() && !isset($data['author_id'])) {
+            if (!$model->exists() && !isset($data['author_id'])) {
                 $data['author_id'] = auth()->user()->id ?? 1;
             }
 

@@ -4,6 +4,7 @@ namespace Cms\Modules\Bread;
 
 use Closure;
 use Spark\Database\Model;
+use Spark\Foundation\Application;
 use Spark\Http\Request;
 
 /**
@@ -27,13 +28,12 @@ class Table
     protected array $bulkActions = [];
 
     protected Model $model;
-    protected ?Request $request = null;
     protected int $perPage = 15;
     protected bool $searchable = true;
     protected string $searchPlaceholder = 'Search...';
-    protected ?Closure $query = null;
-    protected ?string $emptyStateMessage = null;
-    protected ?string $emptyStateIcon = null;
+    protected Closure|null $query = null;
+    protected string|null $emptyStateMessage = null;
+    protected string|null $emptyStateIcon = null;
     protected array $defaultSort = ['id', 'desc'];
     protected bool $striped = true;
     protected bool $hoverable = true;
@@ -200,9 +200,7 @@ class Table
     public function bulkDeleteAction(): static
     {
         return $this->bulkAction('delete', 'Delete Selected', function (array $ids) {
-            foreach ($ids as $id) {
-                $this->model::query()->destroy($id);
-            }
+            $this->model::query()->whereIn($this->model::$primaryKey, $ids)->delete();
         });
     }
 
@@ -282,9 +280,10 @@ class Table
     /**
      * Get table data with applied filters, search, and pagination
      */
-    public function getData(?Request $request = null)
+    public function getData()
     {
-        $this->request = $request ?? request();
+        // Get current request
+        $request = Application::$app->make(Request::class);
 
         // Start query
         $query = $this->model::query();
@@ -295,8 +294,8 @@ class Table
         }
 
         // Apply search
-        if ($this->searchable && $this->request->has('search')) {
-            $searchTerm = $this->request->input('search');
+        if ($this->searchable && $request->has('search')) {
+            $searchTerm = $request->input('search');
             $searchableColumns = array_filter($this->columns, fn($col) => $col->isSearchable());
 
             if (!empty($searchableColumns) && $searchTerm) {
@@ -310,8 +309,8 @@ class Table
 
         // Apply filters
         foreach ($this->filters as $filterName => $filter) {
-            if ($this->request->has($filterName)) {
-                $filterValue = $this->request->input($filterName);
+            if ($request->has($filterName)) {
+                $filterValue = $request->input($filterName);
 
                 if ($filterValue !== null && $filterValue !== '') {
                     if (isset($filter['query'])) {
@@ -322,8 +321,8 @@ class Table
         }
 
         // Apply sorting
-        $sortColumn = $this->request->input('sort', $this->defaultSort[0]);
-        $sortDirection = $this->request->input('direction', $this->defaultSort[1]);
+        $sortColumn = $request->input('sort', $this->defaultSort[0]);
+        $sortDirection = $request->input('direction', $this->defaultSort[1]);
 
         // Validate sort column exists
         if (isset($this->columns[$sortColumn]) && $this->columns[$sortColumn]->isSortable()) {

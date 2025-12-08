@@ -26,8 +26,8 @@ class CustomPostType implements CustomPostTypeContract, Arrayable, ArrayAccess
 
     public function __construct(string $id, array $config = [])
     {
-        $name = str($id)->title()->plural()->toString();
-        $name_singular = str($id)->title()->singular()->toString();
+        $name = str($id)->headline()->plural()->toString();
+        $name_singular = str($id)->headline()->singular()->toString();
 
         $config = [
             'label' => ucfirst($id),

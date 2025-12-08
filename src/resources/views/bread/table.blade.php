@@ -13,11 +13,11 @@
         $currentDirection = request()->input('direction', 'desc');
     @endphp
 
-    <div class="max-w-7xl mx-auto" x-data="tableData()">
+    <div class="max-w-7xl mx-auto" x-data="tableData(@json($data->pluck('id')), '{{ request()->getPath() }}')">
         {{-- Page Header --}}
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                {{ str(class_basename($table->getModel()))->plural()->title() }}
+                {{ str(class_basename($table->getModel()))->headline()->plural() }}
             </h1>
 
             {{-- Create Button --}}
@@ -170,9 +170,9 @@
                     </thead>
 
                     <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                        @forelse($data as $record)
+                        @foreach ($data as $index => $record)
                             <tr
-                                class="{{ $table->isHoverable() ? 'hover:bg-gray-50 dark:hover:bg-gray-800' : '' }} {{ $table->isStriped() && $loop->even ? 'bg-gray-50 dark:bg-gray-800/50' : '' }}">
+                                class="{{ $table->isHoverable() ? 'hover:bg-gray-50 dark:hover:bg-gray-800' : '' }} {{ $table->isStriped() && $index % 2 ? 'bg-gray-50 dark:bg-gray-800/50' : '' }}">
                                 {{-- Bulk Select Checkbox --}}
                                 @if ($hasBulkActions)
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -261,127 +261,62 @@
                                     </td>
                                 @endif
                             </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="{{ count($columns) + ($hasBulkActions ? 1 : 0) + ($hasActions ? 1 : 0) }}"
-                                        class="px-6 py-12 text-center">
-                                        <div class="text-gray-500 dark:text-gray-400">
-                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                            </svg>
-                                            <p class="mt-2 text-sm">{{ $table->getEmptyStateMessage() }}</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                        @endforeach
+                        @if ($data->isEmpty())
+                            <tr>
+                                <td colspan="{{ count($columns) + ($hasBulkActions ? 1 : 0) + ($hasActions ? 1 : 0) }}"
+                                    class="px-6 py-12 text-center">
+                                    <div class="text-gray-500 dark:text-gray-400">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                        <p class="mt-2 text-sm">{{ $table->getEmptyStateMessage() }}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
 
-                {{-- Pagination --}}
-                @if ($data->hasPages())
-                    <div class="bg-white dark:bg-gray-900 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1 flex justify-between sm:hidden">
-                                @if ($data->previousPageUrl())
-                                    <a href="{{ $data->previousPageUrl() }}"
-                                        class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                        Previous
-                                    </a>
-                                @endif
+            {{-- Pagination --}}
+            @if (false)
+                <div class="bg-white dark:bg-gray-900 px-4 py-3 border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            @if ($data->previousPageUrl())
+                                <a href="{{ $data->previousPageUrl() }}"
+                                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    Previous
+                                </a>
+                            @endif
 
-                                @if ($data->nextPageUrl())
-                                    <a href="{{ $data->nextPageUrl() }}"
-                                        class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                        Next
-                                    </a>
-                                @endif
+                            @if ($data->nextPageUrl())
+                                <a href="{{ $data->nextPageUrl() }}"
+                                    class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                    Next
+                                </a>
+                            @endif
+                        </div>
+
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700 dark:text-gray-300">
+                                    Showing <span class="font-medium">{{ $data->firstItem() }}</span> to <span
+                                        class="font-medium">{{ $data->lastItem() }}</span> of <span
+                                        class="font-medium">{{ $data->total() }}</span> results
+                                </p>
                             </div>
 
-                            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                                <div>
-                                    <p class="text-sm text-gray-700 dark:text-gray-300">
-                                        Showing <span class="font-medium">{{ $data->firstItem() }}</span> to <span
-                                            class="font-medium">{{ $data->lastItem() }}</span> of <span
-                                            class="font-medium">{{ $data->total() }}</span> results
-                                    </p>
-                                </div>
-
-                                <div>
-                                    {{ $data->links() }}
-                                </div>
+                            <div>
+                                {{ $data->links() }}
                             </div>
                         </div>
                     </div>
-                @endif
-            </div>
+                </div>
+            @endif
         </div>
-
-        @push('scripts')
-            <script>
-                document.addEventListener('alpine:init', () => {
-                    Alpine.data('tableData', () => ({
-                        selectedRows: [],
-
-                        toggleRow(id) {
-                            const index = this.selectedRows.indexOf(id);
-                            if (index > -1) {
-                                this.selectedRows.splice(index, 1);
-                            } else {
-                                this.selectedRows.push(id);
-                            }
-                        },
-
-                        toggleAll(event) {
-                            if (event.target.checked) {
-                                // Select all visible rows
-                                this.selectedRows = @json($data->pluck('id')->toArray());
-                            } else {
-                                this.selectedRows = [];
-                            }
-                        },
-
-                        performBulkAction(action) {
-                            if (this.selectedRows.length === 0) {
-                                alert('Please select at least one item');
-                                return;
-                            }
-
-                            if (confirm(
-                                    `Are you sure you want to ${action} ${this.selectedRows.length} item(s)?`
-                                    )) {
-                                // Submit bulk action
-                                const form = document.createElement('form');
-                                form.method = 'POST';
-                                form.action = `{{ request()->getPath() }}/bulk/${action}`;
-
-                                const csrfInput = document.createElement('input');
-                                csrfInput.type = 'hidden';
-                                csrfInput.name = '_token';
-                                csrfInput.value = '{{ csrf_token() }}';
-                                form.appendChild(csrfInput);
-
-                                const idsInput = document.createElement('input');
-                                idsInput.type = 'hidden';
-                                idsInput.name = 'ids';
-                                idsInput.value = JSON.stringify(this.selectedRows);
-                                form.appendChild(idsInput);
-
-                                document.body.appendChild(form);
-                                form.submit();
-                            }
-                        }
-                    }));
-                });
-            </script>
-
-            <style>
-                [x-cloak] {
-                    display: none !important;
-                }
-            </style>
-        @endpush
-
-    @stop
+    </div>
+@stop

@@ -3,6 +3,7 @@
 namespace Cms\Modules\Bread;
 
 use Closure;
+use Spark\Contracts\Support\Arrayable;
 use Spark\Database\Model;
 use Spark\Http\Request;
 use Spark\Http\Validator;
@@ -19,17 +20,16 @@ class Form
     protected array $fields = [];
 
     protected Model $model;
-    protected ?Request $request = null;
-    protected ?Validator $validator = null;
     protected array $errors = [];
     protected array $validatedData = [];
-    protected ?string $action = null;
+    protected string|null $action = null;
     protected string $method = 'POST';
     protected array $tabs = [];
+    protected array $fillable = [];
     protected array $groups = [];
     protected string $submitLabel = 'Save';
-    protected ?Closure $beforeSave = null;
-    protected ?Closure $afterSave = null;
+    protected Closure|null $beforeSave = null;
+    protected Closure|null $afterSave = null;
 
     public function __construct(Model $model, array $fields = [])
     {
@@ -43,7 +43,7 @@ class Form
         }
 
         // Auto-fill field values from model if it exists
-        $model->primaryValue() && $this->fillFromModel();
+        $model->exists() && $this->fillFromModel();
     }
 
     /**
@@ -256,6 +256,8 @@ class Form
         foreach ($fields as $field) {
             if ($field instanceof Field) {
                 $this->fields[$field->getName()] = $field;
+            } elseif (is_string($field)) {
+                $this->text($field);
             }
         }
         return $this;
@@ -325,6 +327,23 @@ class Form
     }
 
     /**
+     * Get fillable fields
+     */
+    public function getFillable(): array
+    {
+        return $this->fillable;
+    }
+
+    /**
+     * Set fillable fields
+     */
+    public function fillable(array $fillable): static
+    {
+        $this->fillable = $fillable;
+        return $this;
+    }
+
+    /**
      * Fill field values from model
      */
     protected function fillFromModel(): void
@@ -344,8 +363,6 @@ class Form
      */
     public function fillFromRequest(Request $request): static
     {
-        $this->request = $request;
-
         foreach ($this->fields as $field) {
             $fieldName = $field->getName();
             $value = $request->input($fieldName);
@@ -364,16 +381,15 @@ class Form
      * @param Request|array|null $data Request object or array of data to validate
      * @return bool True if validation passes
      */
-    public function validate(Request|array|null $data = null): bool
+    public function validate(Request|Arrayable|array|null $data = null): bool
     {
         // Prepare data for validation
         if ($data instanceof Request) {
-            $this->request = $data;
             $inputData = $data->all();
         } elseif (is_array($data)) {
             $inputData = $data;
-        } elseif ($this->request) {
-            $inputData = $this->request->all();
+        } elseif ($data instanceof Arrayable) {
+            $inputData = $data->toArray();
         } else {
             // No data provided
             return false;
@@ -395,11 +411,11 @@ class Form
         }
 
         // Validate
-        $this->validator = new Validator();
-        $result = $this->validator->validate($rules, $inputData);
+        $validator = new Validator();
+        $result = $validator->validate($rules, $inputData);
 
         if ($result === false) {
-            $this->errors = $this->validator->getErrors();
+            $this->errors = $validator->getErrors();
             return false;
         }
 
@@ -447,7 +463,7 @@ class Form
      * @param bool $validate Whether to validate before saving
      * @return bool|Model Returns model instance on success, false on validation failure
      */
-    public function save(Request|array|null $data = null, bool $validate = true): bool|Model
+    public function save(Request|Arrayable|array|null $data = null, bool $validate = true): bool|Model
     {
         // Validate if requested
         if ($validate) {
@@ -461,16 +477,24 @@ class Form
                 $dataToSave = $data->all();
             } elseif (is_array($data)) {
                 $dataToSave = $data;
-            } elseif ($this->request) {
-                $dataToSave = $this->request->all();
+            } elseif ($data instanceof Arrayable) {
+                $dataToSave = $data->toArray();
             } else {
                 return false;
             }
         }
 
+        if (empty($this->fillable)) {
+            // If no fillable specified, use all fields
+            $fields = $this->fields;
+        } else {
+            // Filter fields based on fillable
+            $fields = array_filter($this->fields, fn(Field $field) => in_array($field->getName(), $this->fillable));
+        }
+
         // Filter only fillable fields
         $fillableData = [];
-        foreach ($this->fields as $field) {
+        foreach ($fields as $field) {
             $fieldName = $field->getName();
             if (array_key_exists($fieldName, $dataToSave)) {
                 $fillableData[$fieldName] = $dataToSave[$fieldName];

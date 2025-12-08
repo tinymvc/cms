@@ -74,39 +74,7 @@
         @break
 
         @case('rich_editor')
-            <div x-data="richEditor('{{ $fieldName }}', '{{ addslashes($fieldValue ?? '') }}')" x-init="init()">
-                <div class="border rounded-md overflow-hidden dark:border-gray-700">
-                    {{-- Toolbar --}}
-                    <div class="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 p-2 flex gap-1 flex-wrap">
-                        <button type="button" @click="format('bold')"
-                            class="px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-sm">
-                            <strong>B</strong>
-                        </button>
-                        <button type="button" @click="format('italic')"
-                            class="px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-sm">
-                            <em>I</em>
-                        </button>
-                        <button type="button" @click="format('underline')"
-                            class="px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-sm">
-                            <u>U</u>
-                        </button>
-                        <div class="border-l mx-1"></div>
-                        <button type="button" @click="format('insertUnorderedList')"
-                            class="px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-sm">
-                            • List
-                        </button>
-                        <button type="button" @click="format('insertOrderedList')"
-                            class="px-2 py-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded text-sm">
-                            1. List
-                        </button>
-                    </div>
-                    {{-- Editor --}}
-                    <div x-ref="editor" contenteditable="true"
-                        class="min-h-[200px] p-3 focus:outline-none prose dark:prose-invert max-w-none" @input="updateValue()">
-                    </div>
-                </div>
-                <input type="hidden" name="{{ $fieldName }}" x-model="content">
-            </div>
+            <x-cms::richtext :name="$fieldName" :value="$fieldValue" />
         @break
 
         @case('select')
@@ -169,23 +137,7 @@
 
         @case('file')
         @case('image')
-            <div x-data="fileUpload('{{ $fieldName }}')" class="space-y-2">
-                {{-- Current image preview --}}
-                @if ($fieldValue && $fieldType === 'image')
-                    <div class="mb-2">
-                        <img src="{{ $fieldValue }}" alt="Current" class="h-32 w-auto rounded border">
-                    </div>
-                @endif
-
-                <input type="file" name="{{ $fieldName }}" id="{{ $fieldName }}" x-ref="fileInput"
-                    @change="handleFileSelect($event)" {!! $field->getAttributesString() !!}
-                    class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-gray-800 dark:file:text-gray-300">
-
-                {{-- Preview for new upload --}}
-                <div x-show="preview" class="mt-2">
-                    <img :src="preview" alt="Preview" class="h-32 w-auto rounded border">
-                </div>
-            </div>
+            <x-cms::upload :field="$field" :value="$fieldValue" :type="$fieldType" />
         @break
 
         @case('color')

@@ -15,22 +15,22 @@ class Field
     protected string $name;
     protected string $type;
     protected mixed $value = null;
-    protected ?string $label = null;
-    protected ?string $placeholder = null;
-    protected ?string $helperText = null;
+    protected string|null $label = null;
+    protected string|null $placeholder = null;
+    protected string|null $helperText = null;
     protected array $rules = [];
     protected array $options = []; // For select, radio, checkbox
     protected bool $required = false;
     protected bool $disabled = false;
     protected bool $readonly = false;
     protected array $attributes = [];
-    protected ?Closure $formatter = null;
-    protected ?Closure $condition = null; // Conditional rendering
-    protected ?string $group = null; // Field group/section
-    protected ?string $tab = null; // Field tab
+    protected Closure|null $formatter = null;
+    protected Closure|null $condition = null; // Conditional rendering
+    protected string|null $group = null; // Field group/section
+    protected string|null $tab = null; // Field tab
     protected int $columnSpan = 12; // Grid column span (1-12)
     protected mixed $default = null;
-    protected ?string $dependsOn = null; // Field dependency
+    protected string|null $dependsOn = null; // Field dependency
     protected array $dependsOnValues = []; // Values that trigger visibility
     protected bool $repeatable = false;
     protected int $maxRepeat = 10;
@@ -266,11 +266,7 @@ class Field
         }
 
         // Auto-generate label from field name
-        return str($this->name)
-            ->replace('_', ' ')
-            ->replace('-', ' ')
-            ->title()
-            ->toString();
+        return str($this->name)->headline()->toString();
     }
 
     /**
