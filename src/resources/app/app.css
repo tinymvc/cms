@@ -7,6 +7,7 @@
  */
 
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @source "../views/**/*.php";
 @source "./**/*.js";
@@ -76,5 +77,19 @@
     &:disabled {
       @apply pointer-events-none opacity-65;
     }
+  }
+
+  #nprogress {
+    pointer-events: none;
+  }
+
+  #nprogress .bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    height: 0.125rem;
+    width: 100%;
+    background-color: var(--color-primary);
   }
 }

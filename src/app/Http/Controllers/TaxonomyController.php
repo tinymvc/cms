@@ -8,6 +8,6 @@ class TaxonomyController extends Controller
 {
     public function index()
     {
-        return view('cms::taxonomies.index');
+        return fireline('cms::taxonomies.index');
     }
 }

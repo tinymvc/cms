@@ -458,7 +458,7 @@ class Table
     {
         $data = $this->getData();
 
-        return view('cms::bread.table', [
+        return fireline('cms::bread.table', [
             'table' => $this,
             'data' => $data,
             'columns' => $this->getVisibleColumns(),

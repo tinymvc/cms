@@ -337,9 +337,9 @@ class Form
     /**
      * Set fillable fields
      */
-    public function fillable(array $fillable): static
+    public function fillable(array $fields): static
     {
-        $this->fillable = $fillable;
+        $this->fillable = $fields;
         return $this;
     }
 
@@ -621,7 +621,7 @@ class Form
      */
     public function render()
     {
-        return view('cms::bread.form', [
+        return fireline('cms::bread.form', [
             'form' => $this,
             'model' => $this->model,
             'fields' => $this->fields,

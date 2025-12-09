@@ -26,12 +26,6 @@ class PostController extends Controller
         }
 
         $this->postType = $postType;
-
-        $menuItem = $dashboard->findMenuItemBySlug($slug);
-
-        if ($menuItem) {
-            $dashboard->setCurrentMenuItem($menuItem);
-        }
     }
 
     public function index()

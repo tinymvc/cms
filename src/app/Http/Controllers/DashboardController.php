@@ -10,7 +10,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        return view('cms::dashboard');
+        return fireline('cms::dashboard');
     }
 
     public function menu(Request $request, Dashboard $dashboard)
@@ -19,9 +19,7 @@ class DashboardController extends Controller
         $menuItem = $dashboard->findMenuItemBySlug($slug);
 
         if ($menuItem) {
-            $dashboard->setCurrentMenuItem($menuItem);
-
-            return view('cms::menu.page', compact('menuItem'));
+            return fireline('cms::menu.page', compact('menuItem'));
         }
 
         abort(404);
@@ -30,12 +28,7 @@ class DashboardController extends Controller
     public function settings($setting, Dashboard $dashboard)
     {
         if ($dashboard->getSettings()->has($setting)) {
-            $menuItem = $dashboard->findMenuItemBySlug("/settings/$setting");
-            if ($menuItem) {
-                $dashboard->setCurrentMenuItem($menuItem);
-            }
-
-            return view('cms::settings.page', [
+            return fireline('cms::settings.page', [
                 'setting' => $dashboard->getSetting($setting),
             ]);
         }

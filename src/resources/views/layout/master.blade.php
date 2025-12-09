@@ -1,13 +1,32 @@
-<x-cms::html>
-    <div class="flex h-screen overflow-hidden">
-        @include('cms::layout.sidebar')
-        <div class="flex flex-1 flex-col overflow-hidden">
-            @include('cms::layout.header')
-            <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-background p-6">
-                <div class="space-y-8">
-                    @yield('content')
-                </div>
-            </main>
+@if (request()->isFirelineRequest())
+    <div class="space-y-8">@yield('content')</div>
+@else
+    <x-cms::html>
+        <div x-data="app(@json([
+            'menu' => dashboard()->getMenu()->map(
+                    fn($item) => [
+                        'title' => $item['title'],
+                        'icon' => $item['icon'],
+                        'slug' => $item['slug'],
+                        'children' => collect($item['children'] ?? [])->map(
+                                fn($child) => [
+                                    'title' => $child['title'],
+                                    'icon' => $child['icon'],
+                                    'slug' => $child['slug'],
+                                ])->values(),
+                    ])->values(),
+            'prefix' => dashboard_prefix(),
+            'user' => user()->toArray(),
+        ]))" class="flex h-screen overflow-hidden">
+            @include('cms::layout.sidebar')
+            <div class="flex flex-1 flex-col overflow-hidden">
+                @include('cms::layout.header')
+                <main class="flex-1 overflow-y-auto bg-gray-50 dark:bg-background p-6">
+                    <div id="root">
+                        <div class="space-y-8">@yield('content')</div>
+                    </div>
+                </main>
+            </div>
         </div>
-    </div>
-</x-cms::html>
+    </x-cms::html>
+@endif

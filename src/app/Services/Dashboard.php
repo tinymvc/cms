@@ -26,9 +26,6 @@ class Dashboard implements DashboardContract
     /** @var Collection The site settings */
     public Collection $settings;
 
-    /** @var array The current menu item */
-    public array $currentMenuItem = [];
-
     public function __construct()
     {
         $this->menu = new Collection();
@@ -323,35 +320,6 @@ class Dashboard implements DashboardContract
     }
 
     /**
-     * Set the current menu item
-     *
-     * @param array $menuItem
-     * @return void
-     */
-    public function setCurrentMenuItem(array $menuItem): void
-    {
-        if (isset($menuItem['parent'])) {
-            $menu = $this->findMenuItemBySlug($menuItem['parent']);
-            $menu['child'] = $menuItem;
-            unset($menu['children']);
-            $this->currentMenuItem = $menu;
-            return;
-        }
-
-        $this->currentMenuItem = $menuItem;
-    }
-
-    /**
-     * Get the current menu item
-     *
-     * @return array
-     */
-    public function getCurrentMenuItem(): array
-    {
-        return $this->currentMenuItem ?? [];
-    }
-
-    /**
      * Register a setting
      *
      * @param string $id Setting identifier
@@ -453,6 +421,7 @@ class Dashboard implements DashboardContract
             }
         })
             ->path(dashboard_prefix())
+            ->middleware('cms.auth')
             ->name('cms');
     }
 
